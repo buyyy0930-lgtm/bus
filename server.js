@@ -6,23 +6,38 @@ const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { MongoClient, ObjectId } = require('mongodb');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
 
 const PORT = process.env.PORT || 3000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/bsu-chat';
 
-// MongoDB connection
-let db;
-MongoClient.connect(MONGODB_URI, { useUnifiedTopology: true })
-  .then(client => {
-    db = client.db();
-    console.log('MongoDB connected');
-  })
-  .catch(err => console.error('MongoDB connection error:', err));
+// In-memory database
+const db = {
+  users: [],
+  admins: [],
+  messages: [],
+  reports: [],
+  settings: {
+    type: 'general',
+    rules: 'Bakı Dövlət Universiteti Chat Qaydaları\n\n1. Hörmətli ünsiyyət\n2. Spam göndərməyin\n3. Şəxsi məlumatları paylaşmayın\n4. Akademik etikaya riayət edin',
+    topicOfTheDay: 'Xoş gəlmisiniz! BSU Chat-a',
+    filterWords: ['pis', 'nalayiq'],
+    groupMessageExpiry: 24,
+    privateMessageExpiry: 48
+  }
+};
+
+let userIdCounter = 1;
+let adminIdCounter = 1;
+let messageIdCounter = 1;
+let reportIdCounter = 1;
+
+// Helper functions
+function generateId() {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
 
 // Middleware
 app.use(express.json());
@@ -68,25 +83,6 @@ const verificationQuestions = [
   { question: "Sosial elmlər və psixologiya fakültəsi hansı korpusda yerləşir?", answer: "2" }
 ];
 
-const faculties = [
-  "Mexanika-riyaziyyat",
-  "Tətbiqi riyaziyyat və kibernetika",
-  "Fizika",
-  "Kimya",
-  "Biologiya",
-  "Ekologiya və torpaqşünaslıq",
-  "Coğrafiya",
-  "Geologiya",
-  "Filologiya",
-  "Tarix",
-  "Beynəlxalq münasibətlər və iqtisadiyyat",
-  "Hüquq",
-  "Jurnalistika",
-  "İnformasiya və sənəd menecmenti",
-  "Şərqşünaslıq",
-  "Sosial elmlər və psixologiya"
-];
-
 // Routes
 app.post('/api/register', async (req, res) => {
   try {
@@ -98,9 +94,7 @@ app.post('/api/register', async (req, res) => {
     }
 
     // Check if user exists
-    const existingUser = await db.collection('users').findOne({ 
-      $or: [{ email }, { phone }] 
-    });
+    const existingUser = db.users.find(u => u.email === email || u.phone === phone);
     
     if (existingUser) {
       return res.json({ success: false, message: 'Bu email və ya telefon artıq qeydiyyatdan keçib' });
@@ -142,7 +136,8 @@ app.post('/api/verify-register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
-    const result = await db.collection('users').insertOne({
+    const newUser = {
+      _id: generateId(),
       fullName,
       email,
       phone,
@@ -154,7 +149,9 @@ app.post('/api/verify-register', async (req, res) => {
       isActive: true,
       blockedUsers: [],
       createdAt: new Date()
-    });
+    };
+
+    db.users.push(newUser);
 
     res.json({ success: true, message: 'Qeydiyyat uğurla tamamlandı' });
   } catch (error) {
@@ -167,7 +164,7 @@ app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    const user = await db.collection('users').findOne({ email });
+    const user = db.users.find(u => u.email === email);
     
     if (!user) {
       return res.json({ success: false, message: 'İstifadəçi tapılmadı' });
@@ -212,7 +209,7 @@ app.post('/api/admin-login', async (req, res) => {
     }
 
     // Check sub-admin
-    const admin = await db.collection('admins').findOne({ username });
+    const admin = db.admins.find(a => a.username === username);
     
     if (!admin) {
       return res.json({ success: false, message: 'Admin tapılmadı' });
@@ -254,7 +251,7 @@ app.get('/api/user-profile', async (req, res) => {
       return res.json({ success: false, message: 'Giriş tələb olunur' });
     }
 
-    const user = await db.collection('users').findOne({ _id: new ObjectId(req.session.userId) });
+    const user = db.users.find(u => u._id === req.session.userId);
     
     if (!user) {
       return res.json({ success: false, message: 'İstifadəçi tapılmadı' });
@@ -287,16 +284,20 @@ app.post('/api/update-profile', upload.single('profilePicture'), async (req, res
     }
 
     const { fullName, faculty, degree, course } = req.body;
-    const updateData = { fullName, faculty, degree, course: parseInt(course) };
-
-    if (req.file) {
-      updateData.profilePicture = '/uploads/' + req.file.filename;
+    const user = db.users.find(u => u._id === req.session.userId);
+    
+    if (!user) {
+      return res.json({ success: false, message: 'İstifadəçi tapılmadı' });
     }
 
-    await db.collection('users').updateOne(
-      { _id: new ObjectId(req.session.userId) },
-      { $set: updateData }
-    );
+    user.fullName = fullName;
+    user.faculty = faculty;
+    user.degree = degree;
+    user.course = parseInt(course);
+
+    if (req.file) {
+      user.profilePicture = '/uploads/' + req.file.filename;
+    }
 
     res.json({ success: true, message: 'Profil yeniləndi' });
   } catch (error) {
@@ -312,11 +313,16 @@ app.post('/api/block-user', async (req, res) => {
     }
 
     const { targetUserId } = req.body;
+    const user = db.users.find(u => u._id === req.session.userId);
+    
+    if (!user) {
+      return res.json({ success: false });
+    }
 
-    await db.collection('users').updateOne(
-      { _id: new ObjectId(req.session.userId) },
-      { $addToSet: { blockedUsers: targetUserId } }
-    );
+    if (!user.blockedUsers) user.blockedUsers = [];
+    if (!user.blockedUsers.includes(targetUserId)) {
+      user.blockedUsers.push(targetUserId);
+    }
 
     res.json({ success: true });
   } catch (error) {
@@ -332,11 +338,13 @@ app.post('/api/unblock-user', async (req, res) => {
     }
 
     const { targetUserId } = req.body;
+    const user = db.users.find(u => u._id === req.session.userId);
+    
+    if (!user) {
+      return res.json({ success: false });
+    }
 
-    await db.collection('users').updateOne(
-      { _id: new ObjectId(req.session.userId) },
-      { $pull: { blockedUsers: targetUserId } }
-    );
+    user.blockedUsers = user.blockedUsers.filter(id => id !== targetUserId);
 
     res.json({ success: true });
   } catch (error) {
@@ -349,7 +357,8 @@ app.post('/api/report-user', async (req, res) => {
   try {
     const { reportedUserId, reporterUserId, reason } = req.body;
 
-    await db.collection('reports').insertOne({
+    db.reports.push({
+      _id: generateId(),
       reportedUserId,
       reporterUserId,
       reason,
@@ -370,9 +379,10 @@ app.get('/api/admin/users', async (req, res) => {
       return res.json({ success: false, message: 'Admin girişi tələb olunur' });
     }
 
-    const users = await db.collection('users')
-      .find({}, { projection: { password: 0 } })
-      .toArray();
+    const users = db.users.map(u => {
+      const { password, ...userWithoutPassword } = u;
+      return userWithoutPassword;
+    });
 
     res.json({ success: true, users });
   } catch (error) {
@@ -388,11 +398,11 @@ app.post('/api/admin/toggle-user-status', async (req, res) => {
     }
 
     const { userId, isActive } = req.body;
-
-    await db.collection('users').updateOne(
-      { _id: new ObjectId(userId) },
-      { $set: { isActive } }
-    );
+    const user = db.users.find(u => u._id === userId);
+    
+    if (user) {
+      user.isActive = isActive;
+    }
 
     res.json({ success: true });
   } catch (error) {
@@ -407,21 +417,7 @@ app.get('/api/admin/settings', async (req, res) => {
       return res.json({ success: false, message: 'Admin girişi tələb olunur' });
     }
 
-    let settings = await db.collection('settings').findOne({ type: 'general' });
-    
-    if (!settings) {
-      settings = {
-        type: 'general',
-        rules: 'Qaydalar buraya yazılacaq...',
-        topicOfTheDay: 'Günün mövzusu',
-        filterWords: [],
-        groupMessageExpiry: 24,
-        privateMessageExpiry: 48
-      };
-      await db.collection('settings').insertOne(settings);
-    }
-
-    res.json({ success: true, settings });
+    res.json({ success: true, settings: db.settings });
   } catch (error) {
     console.error(error);
     res.json({ success: false });
@@ -436,11 +432,11 @@ app.post('/api/admin/update-settings', async (req, res) => {
 
     const { rules, topicOfTheDay, filterWords, groupMessageExpiry, privateMessageExpiry } = req.body;
 
-    await db.collection('settings').updateOne(
-      { type: 'general' },
-      { $set: { rules, topicOfTheDay, filterWords, groupMessageExpiry, privateMessageExpiry } },
-      { upsert: true }
-    );
+    db.settings.rules = rules;
+    db.settings.topicOfTheDay = topicOfTheDay;
+    db.settings.filterWords = filterWords;
+    db.settings.groupMessageExpiry = groupMessageExpiry;
+    db.settings.privateMessageExpiry = privateMessageExpiry;
 
     // Broadcast topic update
     io.emit('topicUpdated', topicOfTheDay);
@@ -458,30 +454,27 @@ app.get('/api/admin/reported-users', async (req, res) => {
       return res.json({ success: false, message: 'Admin girişi tələb olunur' });
     }
 
-    const reports = await db.collection('reports').aggregate([
-      {
-        $group: {
-          _id: '$reportedUserId',
-          count: { $sum: 1 },
-          reports: { $push: '$$ROOT' }
-        }
-      },
-      {
-        $match: { count: { $gte: 16 } }
+    // Count reports per user
+    const reportCounts = {};
+    db.reports.forEach(report => {
+      if (!reportCounts[report.reportedUserId]) {
+        reportCounts[report.reportedUserId] = 0;
       }
-    ]).toArray();
+      reportCounts[report.reportedUserId]++;
+    });
 
+    // Get users with 16+ reports
     const reportedUsers = [];
-    for (const report of reports) {
-      const user = await db.collection('users').findOne(
-        { _id: new ObjectId(report._id) },
-        { projection: { password: 0 } }
-      );
-      if (user) {
-        reportedUsers.push({
-          user,
-          reportCount: report.count
-        });
+    for (const [userId, count] of Object.entries(reportCounts)) {
+      if (count >= 16) {
+        const user = db.users.find(u => u._id === userId);
+        if (user) {
+          const { password, ...userWithoutPassword } = user;
+          reportedUsers.push({
+            user: userWithoutPassword,
+            reportCount: count
+          });
+        }
       }
     }
 
@@ -502,7 +495,8 @@ app.post('/api/admin/create-sub-admin', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await db.collection('admins').insertOne({
+    db.admins.push({
+      _id: generateId(),
       username,
       password: hashedPassword,
       createdAt: new Date()
@@ -521,7 +515,10 @@ app.get('/api/admin/sub-admins', async (req, res) => {
       return res.json({ success: false, message: 'Super admin səlahiyyəti tələb olunur' });
     }
 
-    const admins = await db.collection('admins').find({}, { projection: { password: 0 } }).toArray();
+    const admins = db.admins.map(a => {
+      const { password, ...adminWithoutPassword } = a;
+      return adminWithoutPassword;
+    });
 
     res.json({ success: true, admins });
   } catch (error) {
@@ -536,7 +533,7 @@ app.delete('/api/admin/sub-admin/:id', async (req, res) => {
       return res.json({ success: false, message: 'Super admin səlahiyyəti tələb olunur' });
     }
 
-    await db.collection('admins').deleteOne({ _id: new ObjectId(req.params.id) });
+    db.admins = db.admins.filter(a => a._id !== req.params.id);
 
     res.json({ success: true });
   } catch (error) {
@@ -556,35 +553,35 @@ io.on('connection', (socket) => {
     socket.faculty = faculty;
     
     // Load recent messages
-    const messages = await db.collection('messages')
-      .find({ faculty, type: 'group' })
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .toArray();
+    const messages = db.messages
+      .filter(m => m.faculty === faculty && m.type === 'group')
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 50)
+      .reverse();
     
-    socket.emit('load-messages', messages.reverse());
+    socket.emit('load-messages', messages);
   });
 
   socket.on('send-group-message', async (data) => {
     try {
       const { userId, faculty, message } = data;
       
-      const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+      const user = db.users.find(u => u._id === userId);
       
       if (!user) return;
 
       // Get filter words
-      const settings = await db.collection('settings').findOne({ type: 'general' });
       let filteredMessage = message;
       
-      if (settings && settings.filterWords) {
-        settings.filterWords.forEach(word => {
+      if (db.settings.filterWords) {
+        db.settings.filterWords.forEach(word => {
           const regex = new RegExp(word, 'gi');
           filteredMessage = filteredMessage.replace(regex, '*'.repeat(word.length));
         });
       }
 
       const messageDoc = {
+        _id: generateId(),
         userId: user._id.toString(),
         userName: user.fullName,
         userFaculty: user.faculty,
@@ -597,17 +594,16 @@ io.on('connection', (socket) => {
         createdAt: new Date()
       };
 
-      const result = await db.collection('messages').insertOne(messageDoc);
-      messageDoc._id = result.insertedId;
+      db.messages.push(messageDoc);
 
       io.to(faculty).emit('new-group-message', messageDoc);
 
       // Auto-delete after expiry
-      if (settings && settings.groupMessageExpiry) {
-        setTimeout(async () => {
-          await db.collection('messages').deleteOne({ _id: result.insertedId });
-          io.to(faculty).emit('message-deleted', result.insertedId.toString());
-        }, settings.groupMessageExpiry * 60 * 60 * 1000);
+      if (db.settings.groupMessageExpiry) {
+        setTimeout(() => {
+          db.messages = db.messages.filter(m => m._id !== messageDoc._id);
+          io.to(faculty).emit('message-deleted', messageDoc._id);
+        }, db.settings.groupMessageExpiry * 60 * 60 * 1000);
       }
     } catch (error) {
       console.error(error);
@@ -620,27 +616,25 @@ io.on('connection', (socket) => {
     socket.join(roomId);
     
     // Load recent messages
-    const messages = await db.collection('messages')
-      .find({ 
-        type: 'private',
-        $or: [
-          { userId, targetUserId },
-          { userId: targetUserId, targetUserId: userId }
-        ]
-      })
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .toArray();
+    const messages = db.messages
+      .filter(m => 
+        m.type === 'private' &&
+        ((m.userId === userId && m.targetUserId === targetUserId) ||
+         (m.userId === targetUserId && m.targetUserId === userId))
+      )
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 50)
+      .reverse();
     
-    socket.emit('load-private-messages', messages.reverse());
+    socket.emit('load-private-messages', messages);
   });
 
   socket.on('send-private-message', async (data) => {
     try {
       const { userId, targetUserId, message } = data;
       
-      const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });
-      const targetUser = await db.collection('users').findOne({ _id: new ObjectId(targetUserId) });
+      const user = db.users.find(u => u._id === userId);
+      const targetUser = db.users.find(u => u._id === targetUserId);
       
       if (!user || !targetUser) return;
 
@@ -650,6 +644,7 @@ io.on('connection', (socket) => {
       }
 
       const messageDoc = {
+        _id: generateId(),
         userId: user._id.toString(),
         userName: user.fullName,
         userProfilePicture: user.profilePicture,
@@ -659,19 +654,17 @@ io.on('connection', (socket) => {
         createdAt: new Date()
       };
 
-      const result = await db.collection('messages').insertOne(messageDoc);
-      messageDoc._id = result.insertedId;
+      db.messages.push(messageDoc);
 
       const roomId = [userId, targetUserId].sort().join('-');
       io.to(roomId).emit('new-private-message', messageDoc);
 
       // Auto-delete after expiry
-      const settings = await db.collection('settings').findOne({ type: 'general' });
-      if (settings && settings.privateMessageExpiry) {
-        setTimeout(async () => {
-          await db.collection('messages').deleteOne({ _id: result.insertedId });
-          io.to(roomId).emit('message-deleted', result.insertedId.toString());
-        }, settings.privateMessageExpiry * 60 * 60 * 1000);
+      if (db.settings.privateMessageExpiry) {
+        setTimeout(() => {
+          db.messages = db.messages.filter(m => m._id !== messageDoc._id);
+          io.to(roomId).emit('message-deleted', messageDoc._id);
+        }, db.settings.privateMessageExpiry * 60 * 60 * 1000);
       }
     } catch (error) {
       console.error(error);
@@ -684,6 +677,8 @@ io.on('connection', (socket) => {
 });
 
 // Start server
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log('Database: In-Memory (no MongoDB required)');
+  console.log('Super Admin: 618ursamajor618 / 618ursa618');
 });
