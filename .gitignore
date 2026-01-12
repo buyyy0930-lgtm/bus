@@ -1,0 +1,15 @@
+node_modules/
+.env
+*.log
+pids
+*.pid
+*.seed
+*.pid.lock
+.pm2/
+logs/
+*.backup
+*.bak
+*.tar.gz
+*.zip
+public/uploads/*
+!public/uploads/.gitkeep

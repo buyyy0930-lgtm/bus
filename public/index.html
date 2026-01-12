@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BSU Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: 20px;
+            padding: 32px 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo svg {
+            width: 36px;
+            height: 36px;
+            fill: white;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 32px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: #f0f0f0;
+            color: #666;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-prefix {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 16px;
+            pointer-events: none;
+        }
+
+        .input-suffix {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            background: white;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        input.with-prefix {
+            padding-left: 60px;
+        }
+
+        input.with-suffix {
+            padding-right: 110px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .verification-question {
+            background: #f5f5f5;
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+        }
+
+        .verification-question p {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .answer-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .answer-option {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            background: white;
+        }
+
+        .answer-option.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        @media (max-width: 360px) {
+            .auth-card {
+                padding: 24px 16px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            input, select, .btn {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="auth-card">
+            <div class="logo">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                </svg>
+            </div>
+            <h1 id="mainTitle">BSU Chat</h1>
+            <p class="subtitle" id="subtitle">Giriş</p>
+
+            <div class="tab-buttons">
+                <button class="tab-button" id="loginTab" onclick="showTab('login')">Giriş</button>
+                <button class="tab-button active" id="registerTab" onclick="showTab('register')">Qeydiyyat</button>
+                <button class="tab-button" id="adminTab" onclick="showTab('admin')">Admin Paneli</button>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+
+            <!-- Login Tab -->
+            <div class="tab-content" id="loginContent">
+                <form onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="loginEmail" placeholder="email" class="with-suffix" required>
+                            <span class="input-suffix">@bsu.edu.az</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Şifrə</label>
+                        <input type="password" id="loginPassword" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Daxil ol</button>
+                </form>
+            </div>
+
+            <!-- Register Tab -->
+            <div class="tab-content active" id="registerContent">
+                <form onsubmit="handleRegister(event)" id="registerForm">
+                    <div class="form-group">
+                        <label>Ad və Soyad</label>
+                        <input type="text" id="regFullName" placeholder="Ad Soyad" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="regEmail" placeholder="email" class="with-suffix" required>
+                            <span class="input-suffix">@bsu.edu.az</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Telefon</label>
+                        <div class="input-wrapper">
+                            <input type="tel" id="regPhone" placeholder="501234567" class="with-prefix" required pattern="[0-9]{9}">
+                            <span class="input-prefix">+994</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Fakültə</label>
+                        <select id="regFaculty" required>
+                            <option value="">Seçin</option>
+                            <option>Mexanika-riyaziyyat</option>
+                            <option>Tətbiqi riyaziyyat və kibernetika</option>
+                            <option>Fizika</option>
+                            <option>Kimya</option>
+                            <option>Biologiya</option>
+                            <option>Ekologiya və torpaqşünaslıq</option>
+                            <option>Coğrafiya</option>
+                            <option>Geologiya</option>
+                            <option>Filologiya</option>
+                            <option>Tarix</option>
+                            <option>Beynəlxalq münasibətlər və iqtisadiyyat</option>
+                            <option>Hüquq</option>
+                            <option>Jurnalistika</option>
+                            <option>İnformasiya və sənəd menecmenti</option>
+                            <option>Şərqşünaslıq</option>
+                            <option>Sosial elmlər və psixologiya</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Dərəcə</label>
+                        <select id="regDegree" required>
+                            <option value="">Seçin</option>
+                            <option>Bakalavr</option>
+                            <option>Magistr</option>
+                            <option>Doktorantura</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Kurs</label>
+                        <select id="regCourse" required>
+                            <option value="">Seçin</option>
+                            <option>1</option>
+                            <option>2</option>
+                            <option>3</option>
+                            <option>4</option>
+                            <option>5</option>
+                            <option>6</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Şifrə</label>
+                        <input type="password" id="regPassword" placeholder="••••••••" required minlength="6">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Davam et</button>
+                </form>
+
+                <div id="verificationStep" style="display: none;">
+                    <div id="verificationQuestions"></div>
+                    <button onclick="submitVerification()" class="btn btn-primary">Qeydiyyatı tamamla</button>
+                    <button onclick="backToRegister()" class="btn btn-secondary">Geri</button>
+                </div>
+            </div>
+
+            <!-- Admin Tab -->
+            <div class="tab-content" id="adminContent">
+                <form onsubmit="handleAdminLogin(event)">
+                    <div class="form-group">
+                        <label>İstifadəçi adı</label>
+                        <input type="text" id="adminUsername" placeholder="İstifadəçi adı" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Şifrə</label>
+                        <input type="password" id="adminPassword" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Daxil ol</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let registrationData = {};
+        let verificationQuestions = [];
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            document.getElementById(tab + 'Tab').classList.add('active');
+            document.getElementById(tab + 'Content').classList.add('active');
+            
+            hideMessages();
+            
+            if (tab === 'login') {
+                document.getElementById('subtitle').textContent = 'Giriş';
+            } else if (tab === 'register') {
+                document.getElementById('subtitle').textContent = 'Qeydiyyat';
+            } else {
+                document.getElementById('subtitle').textContent = 'Admin Paneli';
+            }
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            setTimeout(() => errorEl.style.display = 'none', 5000);
+        }
+
+        function showSuccess(message) {
+            const successEl = document.getElementById('successMessage');
+            successEl.textContent = message;
+            successEl.style.display = 'block';
+            setTimeout(() => successEl.style.display = 'none', 5000);
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value + '@bsu.edu.az';
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('Giriş uğurlu!');
+                    setTimeout(() => window.location.href = '/chat.html', 1000);
+                } else {
+                    showError(data.message);
+                }
+            } catch (error) {
+                showError('Xəta baş verdi');
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            
+            const fullName = document.getElementById('regFullName').value;
+            const email = document.getElementById('regEmail').value + '@bsu.edu.az';
+            const phone = '+994' + document.getElementById('regPhone').value;
+            const faculty = document.getElementById('regFaculty').value;
+            const degree = document.getElementById('regDegree').value;
+            const course = document.getElementById('regCourse').value;
+            const password = document.getElementById('regPassword').value;
+            
+            registrationData = { fullName, email, phone, faculty, degree, course, password };
+            
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(registrationData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    verificationQuestions = data.questions;
+                    showVerificationStep();
+                } else {
+                    showError(data.message);
+                }
+            } catch (error) {
+                showError('Xəta baş verdi');
+            }
+        }
+
+        function showVerificationStep() {
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('verificationStep').style.display = 'block';
+            
+            const container = document.getElementById('verificationQuestions');
+            container.innerHTML = '';
+            
+            verificationQuestions.forEach((q, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'verification-question';
+                questionDiv.innerHTML = `
+                    <p>${index + 1}. ${q.question}</p>
+                    <div class="answer-options">
+                        <div class="answer-option" onclick="selectAnswer(${index}, '1')" data-index="${index}" data-answer="1">1</div>
+                        <div class="answer-option" onclick="selectAnswer(${index}, '2')" data-index="${index}" data-answer="2">2</div>
+                        <div class="answer-option" onclick="selectAnswer(${index}, '3')" data-index="${index}" data-answer="3">3</div>
+                        <div class="answer-option" onclick="selectAnswer(${index}, 'əsas')" data-index="${index}" data-answer="əsas">əsas</div>
+                    </div>
+                `;
+                container.appendChild(questionDiv);
+            });
+        }
+
+        function selectAnswer(questionIndex, answer) {
+            verificationQuestions[questionIndex].userAnswer = answer;
+            
+            const options = document.querySelectorAll(`[data-index="${questionIndex}"]`);
+            options.forEach(option => {
+                if (option.dataset.answer === answer) {
+                    option.classList.add('selected');
+                } else {
+                    option.classList.remove('selected');
+                }
+            });
+        }
+
+        async function submitVerification() {
+            const allAnswered = verificationQuestions.every(q => q.userAnswer);
+            
+            if (!allAnswered) {
+                showError('Bütün sualları cavablandırın');
+                return;
+            }
+            
+            const answers = verificationQuestions.map(q => ({
+                question: q.question,
+                userAnswer: q.userAnswer
+            }));
+            
+            try {
+                const response = await fetch('/api/verify-register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...registrationData, answers })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('Qeydiyyat uğurla tamamlandı!');
+                    setTimeout(() => showTab('login'), 2000);
+                } else {
+                    showError(data.message);
+                }
+            } catch (error) {
+                showError('Xəta baş verdi');
+            }
+        }
+
+        function backToRegister() {
+            document.getElementById('registerForm').style.display = 'block';
+            document.getElementById('verificationStep').style.display = 'none';
+        }
+
+        async function handleAdminLogin(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+            
+            try {
+                const response = await fetch('/api/admin-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('Giriş uğurlu!');
+                    setTimeout(() => window.location.href = '/admin.html', 1000);
+                } else {
+                    showError(data.message);
+                }
+            } catch (error) {
+                showError('Xəta baş verdi');
+            }
+        }
+    </script>
+</body>
+</html>

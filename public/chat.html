@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BSU Chat - Mesajlaşma</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #667eea;
+            overflow: hidden;
+        }
+
+        .header-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .header-info h2 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .header-info p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            color: white;
+        }
+
+        .icon-btn:active {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .topic-banner {
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px 16px;
+            font-size: 14px;
+            text-align: center;
+            border-bottom: 1px solid #ffeaa7;
+        }
+
+        .chat-container {
+            height: calc(100vh - 180px);
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            max-width: 85%;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.own {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .message-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .message-content {
+            flex: 1;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .message-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .message-info {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .message-menu {
+            margin-left: auto;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .message-bubble {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 16px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .message.own .message-bubble {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .message-text {
+            font-size: 15px;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        .message.own .message-time {
+            color: rgba(255,255,255,0.8);
+        }
+
+        .input-container {
+            background: white;
+            padding: 12px 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            border-top: 1px solid #e0e0e0;
+            position: sticky;
+            bottom: 0;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 24px;
+            font-size: 15px;
+            resize: none;
+            max-height: 100px;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #f0f0f0;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .menu-item {
+            padding: 14px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .menu-item:active {
+            background: #f5f5f5;
+        }
+
+        .menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .profile-section {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            background: #667eea;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: bold;
+            overflow: hidden;
+        }
+
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-name {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .profile-info {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .rules-content {
+            white-space: pre-wrap;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .context-menu {
+            display: none;
+            position: fixed;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 8px 0;
+            z-index: 1001;
+            min-width: 200px;
+        }
+
+        .context-menu.active {
+            display: block;
+        }
+
+        .context-menu-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .context-menu-item:active {
+            background: #f5f5f5;
+        }
+
+        .tab-bar {
+            background: white;
+            padding: 8px 16px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .tab-item {
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: #f0f0f0;
+            color: #666;
+            white-space: nowrap;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .tab-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div class="header-avatar" id="headerAvatar">
+                <span id="headerInitial">?</span>
+            </div>
+            <div class="header-info">
+                <h2 id="headerName">BSU Chat</h2>
+                <p id="headerSubtitle">Yüklənir...</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="showRules()">
+                <span>ℹ️</span>
+            </button>
+            <button class="icon-btn" onclick="showProfile()">
+                <span>⚙️</span>
+            </button>
+            <button class="icon-btn" onclick="logout()">
+                <span>🚪</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="topic-banner" id="topicBanner">
+        Günün mövzusu yüklənir...
+    </div>
+
+    <div class="tab-bar">
+        <div class="tab-item active" onclick="switchTab('group')">Qrup Chat</div>
+        <div class="tab-item" onclick="switchTab('private')">Şəxsi Mesajlar</div>
+    </div>
+
+    <div class="chat-container" id="chatContainer"></div>
+
+    <div class="input-container">
+        <input type="text" class="message-input" id="messageInput" placeholder="Mesaj yazın...">
+        <button class="send-btn" onclick="sendMessage()">
+            <span>➤</span>
+        </button>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="context-menu" id="contextMenu">
+        <div class="context-menu-item" onclick="openPrivateChat()">
+            💬 Şəxsi chat
+        </div>
+        <div class="context-menu-item" onclick="blockUser()">
+            🚫 Əngəllə
+        </div>
+        <div class="context-menu-item" onclick="reportUser()">
+            ⚠️ Şikayət et
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal" id="profileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Profil Ayarları</h3>
+                <button class="close-btn" onclick="closeModal('profileModal')">✕</button>
+            </div>
+            <div class="profile-section">
+                <div class="profile-avatar" id="profileAvatar">
+                    <span id="profileInitial">?</span>
+                </div>
+                <input type="file" id="profilePictureInput" accept="image/*" style="display: none;" onchange="uploadProfilePicture()">
+                <button class="btn btn-primary" onclick="document.getElementById('profilePictureInput').click()">Şəkil yüklə</button>
+            </div>
+            <form onsubmit="updateProfile(event)">
+                <div class="form-group">
+                    <label>Ad və Soyad</label>
+                    <input type="text" id="profileFullName" required>
+                </div>
+                <div class="form-group">
+                    <label>Fakültə</label>
+                    <select id="profileFaculty" required>
+                        <option>Mexanika-riyaziyyat</option>
+                        <option>Tətbiqi riyaziyyat və kibernetika</option>
+                        <option>Fizika</option>
+                        <option>Kimya</option>
+                        <option>Biologiya</option>
+                        <option>Ekologiya və torpaqşünaslıq</option>
+                        <option>Coğrafiya</option>
+                        <option>Geologiya</option>
+                        <option>Filologiya</option>
+                        <option>Tarix</option>
+                        <option>Beynəlxalq münasibətlər və iqtisadiyyat</option>
+                        <option>Hüquq</option>
+                        <option>Jurnalistika</option>
+                        <option>İnformasiya və sənəd menecmenti</option>
+                        <option>Şərqşünaslıq</option>
+                        <option>Sosial elmlər və psixologiya</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Dərəcə</label>
+                    <select id="profileDegree" required>
+                        <option>Bakalavr</option>
+                        <option>Magistr</option>
+                        <option>Doktorantura</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Kurs</label>
+                    <select id="profileCourse" required>
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                        <option>4</option>
+                        <option>5</option>
+                        <option>6</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Yadda saxla</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Rules Modal -->
+    <div class="modal" id="rulesModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Qaydalar</h3>
+                <button class="close-btn" onclick="closeModal('rulesModal')">✕</button>
+            </div>
+            <div class="rules-content" id="rulesContent">
+                Yüklənir...
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let currentUser = null;
+        let currentChatMode = 'group';
+        let currentTargetUser = null;
+        let contextMenuTargetUser = null;
+
+        // Initialize
+        async function init() {
+            const response = await fetch('/api/user-profile');
+            const data = await response.json();
+            
+            if (!data.success) {
+                window.location.href = '/';
+                return;
+            }
+            
+            currentUser = data.user;
+            updateHeader();
+            loadSettings();
+            
+            // Join faculty chat
+            socket.emit('join-faculty', {
+                userId: currentUser.id,
+                faculty: currentUser.faculty
+            });
+            
+            socket.on('load-messages', (messages) => {
+                displayMessages(messages);
+            });
+            
+            socket.on('new-group-message', (message) => {
+                if (currentChatMode === 'group') {
+                    appendMessage(message);
+                }
+            });
+            
+            socket.on('load-private-messages', (messages) => {
+                displayMessages(messages);
+            });
+            
+            socket.on('new-private-message', (message) => {
+                if (currentChatMode === 'private') {
+                    appendMessage(message);
+                }
+            });
+            
+            socket.on('topicUpdated', (topic) => {
+                document.getElementById('topicBanner').textContent = topic;
+            });
+            
+            socket.on('message-deleted', (messageId) => {
+                const messageEl = document.querySelector(`[data-message-id="${messageId}"]`);
+                if (messageEl) messageEl.remove();
+            });
+        }
+
+        function updateHeader() {
+            document.getElementById('headerName').textContent = currentUser.fullName;
+            document.getElementById('headerSubtitle').textContent = `${currentUser.faculty} - ${currentUser.degree} - ${currentUser.course}-ci kurs`;
+            
+            const initial = currentUser.fullName.charAt(0).toUpperCase();
+            document.getElementById('headerInitial').textContent = initial;
+            
+            if (currentUser.profilePicture) {
+                document.getElementById('headerAvatar').innerHTML = `<img src="${currentUser.profilePicture}" alt="Avatar">`;
+            }
+        }
+
+        async function loadSettings() {
+            const response = await fetch('/api/admin/settings');
+            const data = await response.json();
+            
+            if (data.success) {
+                document.getElementById('topicBanner').textContent = data.settings.topicOfTheDay;
+            }
+        }
+
+        function displayMessages(messages) {
+            const container = document.getElementById('chatContainer');
+            container.innerHTML = '';
+            
+            messages.forEach(message => {
+                appendMessage(message);
+            });
+            
+            scrollToBottom();
+        }
+
+        function appendMessage(message) {
+            // Check if user is blocked
+            if (currentUser.blockedUsers && currentUser.blockedUsers.includes(message.userId)) {
+                return;
+            }
+            
+            const container = document.getElementById('chatContainer');
+            const messageEl = document.createElement('div');
+            messageEl.className = 'message';
+            messageEl.dataset.messageId = message._id;
+            
+            const isOwn = message.userId === currentUser.id;
+            if (isOwn) messageEl.classList.add('own');
+            
+            const avatar = message.userProfilePicture 
+                ? `<img src="${message.userProfilePicture}" alt="Avatar">`
+                : message.userName.charAt(0).toUpperCase();
+            
+            const time = new Date(message.createdAt).toLocaleTimeString('az-AZ', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                timeZone: 'Asia/Baku'
+            });
+            
+            let headerHtml = '';
+            if (currentChatMode === 'group') {
+                headerHtml = `
+                    <div class="message-header">
+                        <span class="message-name">${message.userName}</span>
+                        <span class="message-info">${message.userFaculty} • ${message.userDegree} • ${message.userCourse}-ci kurs</span>
+                        ${!isOwn ? `<span class="message-menu" onclick="showContextMenu(event, '${message.userId}', '${message.userName}')">⋮</span>` : ''}
+                    </div>
+                `;
+            }
+            
+            messageEl.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">
+                    ${headerHtml}
+                    <div class="message-bubble">
+                        <div class="message-text">${message.message}</div>
+                        <div class="message-time">${time}</div>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(messageEl);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('chatContainer');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            if (currentChatMode === 'group') {
+                socket.emit('send-group-message', {
+                    userId: currentUser.id,
+                    faculty: currentUser.faculty,
+                    message
+                });
+            } else if (currentChatMode === 'private' && currentTargetUser) {
+                socket.emit('send-private-message', {
+                    userId: currentUser.id,
+                    targetUserId: currentTargetUser.id,
+                    message
+                });
+            }
+            
+            input.value = '';
+        }
+
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        function switchTab(mode) {
+            currentChatMode = mode;
+            
+            document.querySelectorAll('.tab-item').forEach(item => item.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (mode === 'group') {
+                socket.emit('join-faculty', {
+                    userId: currentUser.id,
+                    faculty: currentUser.faculty
+                });
+            }
+        }
+
+        function showContextMenu(e, userId, userName) {
+            e.stopPropagation();
+            
+            const menu = document.getElementById('contextMenu');
+            menu.style.left = e.pageX + 'px';
+            menu.style.top = e.pageY + 'px';
+            menu.classList.add('active');
+            
+            contextMenuTargetUser = { id: userId, name: userName };
+        }
+
+        document.addEventListener('click', () => {
+            document.getElementById('contextMenu').classList.remove('active');
+        });
+
+        function openPrivateChat() {
+            if (!contextMenuTargetUser) return;
+            
+            currentTargetUser = contextMenuTargetUser;
+            currentChatMode = 'private';
+            
+            document.querySelectorAll('.tab-item').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll('.tab-item')[1].classList.add('active');
+            
+            socket.emit('join-private-chat', {
+                userId: currentUser.id,
+                targetUserId: currentTargetUser.id
+            });
+            
+            document.getElementById('headerName').textContent = contextMenuTargetUser.name;
+            document.getElementById('headerSubtitle').textContent = 'Şəxsi chat';
+        }
+
+        async function blockUser() {
+            if (!contextMenuTargetUser) return;
+            
+            const response = await fetch('/api/block-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetUserId: contextMenuTargetUser.id })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                alert('İstifadəçi əngəlləndi');
+                window.location.reload();
+            }
+        }
+
+        async function reportUser() {
+            if (!contextMenuTargetUser) return;
+            
+            const reason = prompt('Şikayət səbəbi:');
+            if (!reason) return;
+            
+            await fetch('/api/report-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    reportedUserId: contextMenuTargetUser.id,
+                    reporterUserId: currentUser.id,
+                    reason
+                })
+            });
+            
+            alert('Şikayət göndərildi');
+        }
+
+        async function showProfile() {
+            const modal = document.getElementById('profileModal');
+            modal.classList.add('active');
+            
+            document.getElementById('profileFullName').value = currentUser.fullName;
+            document.getElementById('profileFaculty').value = currentUser.faculty;
+            document.getElementById('profileDegree').value = currentUser.degree;
+            document.getElementById('profileCourse').value = currentUser.course;
+            
+            const initial = currentUser.fullName.charAt(0).toUpperCase();
+            document.getElementById('profileInitial').textContent = initial;
+            
+            if (currentUser.profilePicture) {
+                document.getElementById('profileAvatar').innerHTML = `<img src="${currentUser.profilePicture}" alt="Avatar">`;
+            }
+        }
+
+        async function uploadProfilePicture() {
+            const input = document.getElementById('profilePictureInput');
+            const file = input.files[0];
+            
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('profilePicture', file);
+            
+            const response = await fetch('/api/update-profile', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                alert('Profil şəkli yeniləndi');
+                window.location.reload();
+            }
+        }
+
+        async function updateProfile(e) {
+            e.preventDefault();
+            
+            const fullName = document.getElementById('profileFullName').value;
+            const faculty = document.getElementById('profileFaculty').value;
+            const degree = document.getElementById('profileDegree').value;
+            const course = document.getElementById('profileCourse').value;
+            
+            const formData = new FormData();
+            formData.append('fullName', fullName);
+            formData.append('faculty', faculty);
+            formData.append('degree', degree);
+            formData.append('course', course);
+            
+            const response = await fetch('/api/update-profile', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                alert('Profil yeniləndi');
+                window.location.reload();
+            }
+        }
+
+        async function showRules() {
+            const modal = document.getElementById('rulesModal');
+            modal.classList.add('active');
+            
+            const response = await fetch('/api/admin/settings');
+            const data = await response.json();
+            
+            if (data.success) {
+                document.getElementById('rulesContent').textContent = data.settings.rules;
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = '/';
+        }
+
+        init();
+    </script>
+</body>
+</html>

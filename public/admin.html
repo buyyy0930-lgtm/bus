@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BSU Chat - Admin Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #dc3545;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #e0e0e0;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .tab.active {
+            color: #dc3545;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #dc3545;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #c82333;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+
+        .filter-words-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .filter-word {
+            background: #f0f0f0;
+            padding: 6px 12px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .filter-word button {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .add-word-form {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .add-word-form input {
+            flex: 1;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 12px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                gap: 8px;
+            }
+
+            .tab {
+                padding: 10px 16px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛡️ Admin Paneli</h1>
+        <button class="logout-btn" onclick="logout()">Çıxış</button>
+    </div>
+
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Ümumi İstifadəçilər</h3>
+                <div class="number" id="totalUsers">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Aktiv İstifadəçilər</h3>
+                <div class="number" id="activeUsers">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Şikayətli Hesablar</h3>
+                <div class="number" id="reportedUsers">0</div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('users')">İstifadəçilər</button>
+            <button class="tab" onclick="showTab('settings')">Tənzimləmələr</button>
+            <button class="tab" onclick="showTab('reported')">Şikayətlər</button>
+            <button class="tab" id="subAdminsTab" onclick="showTab('subadmins')" style="display: none;">Alt Adminlər</button>
+        </div>
+
+        <div class="success-message" id="successMessage"></div>
+        <div class="error-message" id="errorMessage"></div>
+
+        <!-- Users Tab -->
+        <div class="tab-content active" id="usersContent">
+            <h2>İstifadəçi Siyahısı</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ad Soyad</th>
+                            <th>Email</th>
+                            <th>Telefon</th>
+                            <th>Fakültə</th>
+                            <th>Dərəcə</th>
+                            <th>Kurs</th>
+                            <th>Status</th>
+                            <th>Əməliyyatlar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div class="tab-content" id="settingsContent">
+            <h2>Sistem Tənzimləmələri</h2>
+            
+            <div class="form-group">
+                <label>Günün Mövzusu</label>
+                <input type="text" id="topicOfTheDay" placeholder="Günün mövzusunu daxil edin">
+            </div>
+
+            <div class="form-group">
+                <label>Qaydalar</label>
+                <textarea id="rules" placeholder="Qaydaları daxil edin"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Filtr Sözləri</label>
+                <div class="filter-words-container" id="filterWordsContainer"></div>
+                <div class="add-word-form">
+                    <input type="text" id="newFilterWord" placeholder="Yeni söz əlavə et">
+                    <button class="btn btn-secondary" onclick="addFilterWord()">Əlavə et</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Qrup Mesajlarının Silinmə Vaxtı (saat)</label>
+                <input type="number" id="groupMessageExpiry" min="1" max="720" value="24">
+            </div>
+
+            <div class="form-group">
+                <label>Şəxsi Mesajların Silinmə Vaxtı (saat)</label>
+                <input type="number" id="privateMessageExpiry" min="1" max="720" value="48">
+            </div>
+
+            <button class="btn btn-primary" onclick="saveSettings()">Tənzimləmələri Yadda Saxla</button>
+        </div>
+
+        <!-- Reported Tab -->
+        <div class="tab-content" id="reportedContent">
+            <h2>Şikayət Edilən Hesablar (16+ şikayət)</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ad Soyad</th>
+                            <th>Email</th>
+                            <th>Fakültə</th>
+                            <th>Şikayət Sayı</th>
+                            <th>Status</th>
+                            <th>Əməliyyatlar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportedTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Sub-Admins Tab -->
+        <div class="tab-content" id="subadminsContent">
+            <h2>Alt Adminlər</h2>
+            
+            <div style="margin-bottom: 24px;">
+                <h3>Yeni Alt Admin Yarat</h3>
+                <div class="form-group">
+                    <label>İstifadəçi adı</label>
+                    <input type="text" id="newAdminUsername">
+                </div>
+                <div class="form-group">
+                    <label>Şifrə</label>
+                    <input type="password" id="newAdminPassword">
+                </div>
+                <button class="btn btn-success" onclick="createSubAdmin()">Yarat</button>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>İstifadəçi adı</th>
+                            <th>Yaradılma tarixi</th>
+                            <th>Əməliyyatlar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="subAdminsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isSuperAdmin = false;
+        let currentSettings = {};
+        let filterWords = [];
+
+        async function init() {
+            const response = await fetch('/api/check-session');
+            const data = await response.json();
+            
+            if (!data.authenticated || data.type !== 'admin') {
+                window.location.href = '/';
+                return;
+            }
+            
+            isSuperAdmin = data.isSuperAdmin;
+            
+            if (isSuperAdmin) {
+                document.getElementById('subAdminsTab').style.display = 'block';
+            }
+            
+            loadUsers();
+            loadSettings();
+            loadReportedUsers();
+            
+            if (isSuperAdmin) {
+                loadSubAdmins();
+            }
+        }
+
+        async function loadUsers() {
+            const response = await fetch('/api/admin/users');
+            const data = await response.json();
+            
+            if (!data.success) return;
+            
+            const users = data.users;
+            const activeCount = users.filter(u => u.isActive).length;
+            
+            document.getElementById('totalUsers').textContent = users.length;
+            document.getElementById('activeUsers').textContent = activeCount;
+            
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+            
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${user.fullName}</td>
+                    <td>${user.email}</td>
+                    <td>${user.phone}</td>
+                    <td>${user.faculty}</td>
+                    <td>${user.degree}</td>
+                    <td>${user.course}</td>
+                    <td>
+                        <span class="status-badge ${user.isActive ? 'status-active' : 'status-inactive'}">
+                            ${user.isActive ? 'Aktiv' : 'Deaktiv'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="action-btn btn-${user.isActive ? 'danger' : 'success'}" 
+                                onclick="toggleUserStatus('${user._id}', ${!user.isActive})">
+                            ${user.isActive ? 'Deaktiv et' : 'Aktiv et'}
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function toggleUserStatus(userId, isActive) {
+            const response = await fetch('/api/admin/toggle-user-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, isActive })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showSuccess('Status yeniləndi');
+                loadUsers();
+            } else {
+                showError('Xəta baş verdi');
+            }
+        }
+
+        async function loadSettings() {
+            const response = await fetch('/api/admin/settings');
+            const data = await response.json();
+            
+            if (!data.success) return;
+            
+            currentSettings = data.settings;
+            filterWords = data.settings.filterWords || [];
+            
+            document.getElementById('topicOfTheDay').value = data.settings.topicOfTheDay;
+            document.getElementById('rules').value = data.settings.rules;
+            document.getElementById('groupMessageExpiry').value = data.settings.groupMessageExpiry;
+            document.getElementById('privateMessageExpiry').value = data.settings.privateMessageExpiry;
+            
+            renderFilterWords();
+        }
+
+        function renderFilterWords() {
+            const container = document.getElementById('filterWordsContainer');
+            container.innerHTML = '';
+            
+            filterWords.forEach(word => {
+                const div = document.createElement('div');
+                div.className = 'filter-word';
+                div.innerHTML = `
+                    <span>${word}</span>
+                    <button onclick="removeFilterWord('${word}')">×</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function addFilterWord() {
+            const input = document.getElementById('newFilterWord');
+            const word = input.value.trim();
+            
+            if (!word) return;
+            
+            if (!filterWords.includes(word)) {
+                filterWords.push(word);
+                renderFilterWords();
+            }
+            
+            input.value = '';
+        }
+
+        function removeFilterWord(word) {
+            filterWords = filterWords.filter(w => w !== word);
+            renderFilterWords();
+        }
+
+        async function saveSettings() {
+            const topicOfTheDay = document.getElementById('topicOfTheDay').value;
+            const rules = document.getElementById('rules').value;
+            const groupMessageExpiry = parseInt(document.getElementById('groupMessageExpiry').value);
+            const privateMessageExpiry = parseInt(document.getElementById('privateMessageExpiry').value);
+            
+            const response = await fetch('/api/admin/update-settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    topicOfTheDay,
+                    rules,
+                    filterWords,
+                    groupMessageExpiry,
+                    privateMessageExpiry
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showSuccess('Tənzimləmələr yadda saxlanıldı');
+            } else {
+                showError('Xəta baş verdi');
+            }
+        }
+
+        async function loadReportedUsers() {
+            const response = await fetch('/api/admin/reported-users');
+            const data = await response.json();
+            
+            if (!data.success) return;
+            
+            document.getElementById('reportedUsers').textContent = data.reportedUsers.length;
+            
+            const tbody = document.getElementById('reportedTableBody');
+            tbody.innerHTML = '';
+            
+            data.reportedUsers.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.user.fullName}</td>
+                    <td>${item.user.email}</td>
+                    <td>${item.user.faculty}</td>
+                    <td>${item.reportCount}</td>
+                    <td>
+                        <span class="status-badge ${item.user.isActive ? 'status-active' : 'status-inactive'}">
+                            ${item.user.isActive ? 'Aktiv' : 'Deaktiv'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="action-btn btn-${item.user.isActive ? 'danger' : 'success'}" 
+                                onclick="toggleUserStatus('${item.user._id}', ${!item.user.isActive})">
+                            ${item.user.isActive ? 'Deaktiv et' : 'Aktiv et'}
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function loadSubAdmins() {
+            const response = await fetch('/api/admin/sub-admins');
+            const data = await response.json();
+            
+            if (!data.success) return;
+            
+            const tbody = document.getElementById('subAdminsTableBody');
+            tbody.innerHTML = '';
+            
+            data.admins.forEach(admin => {
+                const row = document.createElement('tr');
+                const date = new Date(admin.createdAt).toLocaleDateString('az-AZ');
+                
+                row.innerHTML = `
+                    <td>${admin.username}</td>
+                    <td>${date}</td>
+                    <td>
+                        <button class="action-btn btn-danger" onclick="deleteSubAdmin('${admin._id}')">
+                            Sil
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function createSubAdmin() {
+            const username = document.getElementById('newAdminUsername').value;
+            const password = document.getElementById('newAdminPassword').value;
+            
+            if (!username || !password) {
+                showError('Bütün sahələri doldurun');
+                return;
+            }
+            
+            const response = await fetch('/api/admin/create-sub-admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showSuccess('Alt admin yaradıldı');
+                document.getElementById('newAdminUsername').value = '';
+                document.getElementById('newAdminPassword').value = '';
+                loadSubAdmins();
+            } else {
+                showError(data.message || 'Xəta baş verdi');
+            }
+        }
+
+        async function deleteSubAdmin(adminId) {
+            if (!confirm('Əminsiniz?')) return;
+            
+            const response = await fetch(`/api/admin/sub-admin/${adminId}`, {
+                method: 'DELETE'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showSuccess('Alt admin silindi');
+                loadSubAdmins();
+            } else {
+                showError('Xəta baş verdi');
+            }
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Content').classList.add('active');
+        }
+
+        function showSuccess(message) {
+            const el = document.getElementById('successMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 5000);
+        }
+
+        function showError(message) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 5000);
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = '/';
+        }
+
+        init();
+    </script>
+</body>
+</html>
