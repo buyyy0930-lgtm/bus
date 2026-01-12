@@ -1,0 +1,17 @@
+{
+  "users": [],
+  "admins": [],
+  "messages": [],
+  "reports": [],
+  "settings": {
+    "type": "general",
+    "rules": "Bakı Dövlət Universiteti Chat Qaydaları\n\n1. Hörmətli ünsiyyət\n2. Spam göndərməyin\n3. Şəxsi məlumatları paylaşmayın\n4. Akademik etikaya riayət edin",
+    "topicOfTheDay": "Xoş gəlmisiniz! BSU Chat-a",
+    "filterWords": [
+      "pis",
+      "nalayiq"
+    ],
+    "groupMessageExpiry": 24,
+    "privateMessageExpiry": 48
+  }
+}

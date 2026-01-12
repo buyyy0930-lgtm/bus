@@ -13,8 +13,11 @@ const io = socketIO(server);
 
 const PORT = process.env.PORT || 3000;
 
-// In-memory database
-const db = {
+// Persistent database file
+const DB_FILE = './database.json';
+
+// Load or initialize database
+let db = {
   users: [],
   admins: [],
   messages: [],
@@ -29,10 +32,33 @@ const db = {
   }
 };
 
-let userIdCounter = 1;
-let adminIdCounter = 1;
-let messageIdCounter = 1;
-let reportIdCounter = 1;
+// Load database from file
+function loadDatabase() {
+  try {
+    if (fs.existsSync(DB_FILE)) {
+      const data = fs.readFileSync(DB_FILE, 'utf8');
+      db = JSON.parse(data);
+      console.log('Database loaded from file');
+    } else {
+      saveDatabase();
+      console.log('New database created');
+    }
+  } catch (error) {
+    console.error('Error loading database:', error);
+  }
+}
+
+// Save database to file
+function saveDatabase() {
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf8');
+  } catch (error) {
+    console.error('Error saving database:', error);
+  }
+}
+
+// Initialize database
+loadDatabase();
 
 // Helper functions
 function generateId() {
@@ -47,7 +73,10 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'bsu-chat-secret-key-618',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false }
+  cookie: { 
+    secure: false,
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+  }
 }));
 
 // File upload configuration
@@ -148,10 +177,11 @@ app.post('/api/verify-register', async (req, res) => {
       profilePicture: null,
       isActive: true,
       blockedUsers: [],
-      createdAt: new Date()
+      createdAt: new Date().toISOString()
     };
 
     db.users.push(newUser);
+    saveDatabase();
 
     res.json({ success: true, message: 'Qeydiyyat uğurla tamamlandı' });
   } catch (error) {
@@ -299,6 +329,7 @@ app.post('/api/update-profile', upload.single('profilePicture'), async (req, res
       user.profilePicture = '/uploads/' + req.file.filename;
     }
 
+    saveDatabase();
     res.json({ success: true, message: 'Profil yeniləndi' });
   } catch (error) {
     console.error(error);
@@ -324,6 +355,7 @@ app.post('/api/block-user', async (req, res) => {
       user.blockedUsers.push(targetUserId);
     }
 
+    saveDatabase();
     res.json({ success: true });
   } catch (error) {
     console.error(error);
@@ -346,6 +378,7 @@ app.post('/api/unblock-user', async (req, res) => {
 
     user.blockedUsers = user.blockedUsers.filter(id => id !== targetUserId);
 
+    saveDatabase();
     res.json({ success: true });
   } catch (error) {
     console.error(error);
@@ -362,9 +395,10 @@ app.post('/api/report-user', async (req, res) => {
       reportedUserId,
       reporterUserId,
       reason,
-      createdAt: new Date()
+      createdAt: new Date().toISOString()
     });
 
+    saveDatabase();
     res.json({ success: true });
   } catch (error) {
     console.error(error);
@@ -402,6 +436,7 @@ app.post('/api/admin/toggle-user-status', async (req, res) => {
     
     if (user) {
       user.isActive = isActive;
+      saveDatabase();
     }
 
     res.json({ success: true });
@@ -413,10 +448,6 @@ app.post('/api/admin/toggle-user-status', async (req, res) => {
 
 app.get('/api/admin/settings', async (req, res) => {
   try {
-    if (!req.session.adminId) {
-      return res.json({ success: false, message: 'Admin girişi tələb olunur' });
-    }
-
     res.json({ success: true, settings: db.settings });
   } catch (error) {
     console.error(error);
@@ -438,8 +469,12 @@ app.post('/api/admin/update-settings', async (req, res) => {
     db.settings.groupMessageExpiry = groupMessageExpiry;
     db.settings.privateMessageExpiry = privateMessageExpiry;
 
+    saveDatabase();
+
     // Broadcast topic update
     io.emit('topicUpdated', topicOfTheDay);
+    // Broadcast rules update
+    io.emit('rulesUpdated', rules);
 
     res.json({ success: true });
   } catch (error) {
@@ -499,9 +534,10 @@ app.post('/api/admin/create-sub-admin', async (req, res) => {
       _id: generateId(),
       username,
       password: hashedPassword,
-      createdAt: new Date()
+      createdAt: new Date().toISOString()
     });
 
+    saveDatabase();
     res.json({ success: true });
   } catch (error) {
     console.error(error);
@@ -535,7 +571,40 @@ app.delete('/api/admin/sub-admin/:id', async (req, res) => {
 
     db.admins = db.admins.filter(a => a._id !== req.params.id);
 
+    saveDatabase();
     res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.json({ success: false });
+  }
+});
+
+// Get all users for private chat list
+app.get('/api/users-list', async (req, res) => {
+  try {
+    if (!req.session.userId) {
+      return res.json({ success: false, message: 'Giriş tələb olunur' });
+    }
+
+    const currentUser = db.users.find(u => u._id === req.session.userId);
+    
+    if (!currentUser) {
+      return res.json({ success: false, message: 'İstifadəçi tapılmadı' });
+    }
+
+    // Get users from same faculty, exclude current user
+    const users = db.users
+      .filter(u => u.faculty === currentUser.faculty && u._id !== req.session.userId && u.isActive)
+      .map(u => ({
+        id: u._id,
+        fullName: u.fullName,
+        faculty: u.faculty,
+        degree: u.degree,
+        course: u.course,
+        profilePicture: u.profilePicture
+      }));
+
+    res.json({ success: true, users });
   } catch (error) {
     console.error(error);
     res.json({ success: false });
@@ -552,12 +621,13 @@ io.on('connection', (socket) => {
     socket.userId = userId;
     socket.faculty = faculty;
     
-    // Load recent messages
+    console.log(`User ${userId} joined faculty: ${faculty}`);
+    
+    // Load recent messages for this faculty
     const messages = db.messages
       .filter(m => m.faculty === faculty && m.type === 'group')
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 50)
-      .reverse();
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+      .slice(-50);
     
     socket.emit('load-messages', messages);
   });
@@ -568,12 +638,17 @@ io.on('connection', (socket) => {
       
       const user = db.users.find(u => u._id === userId);
       
-      if (!user) return;
+      if (!user) {
+        console.log('User not found:', userId);
+        return;
+      }
+
+      console.log(`Message from ${user.fullName} in ${faculty}: ${message}`);
 
       // Get filter words
       let filteredMessage = message;
       
-      if (db.settings.filterWords) {
+      if (db.settings.filterWords && db.settings.filterWords.length > 0) {
         db.settings.filterWords.forEach(word => {
           const regex = new RegExp(word, 'gi');
           filteredMessage = filteredMessage.replace(regex, '*'.repeat(word.length));
@@ -591,22 +666,27 @@ io.on('connection', (socket) => {
         faculty,
         message: filteredMessage,
         type: 'group',
-        createdAt: new Date()
+        createdAt: new Date().toISOString()
       };
 
       db.messages.push(messageDoc);
+      saveDatabase();
 
+      console.log(`Broadcasting message to faculty room: ${faculty}`);
+      
+      // Emit to ALL clients in the faculty room (including sender)
       io.to(faculty).emit('new-group-message', messageDoc);
 
       // Auto-delete after expiry
       if (db.settings.groupMessageExpiry) {
         setTimeout(() => {
           db.messages = db.messages.filter(m => m._id !== messageDoc._id);
+          saveDatabase();
           io.to(faculty).emit('message-deleted', messageDoc._id);
         }, db.settings.groupMessageExpiry * 60 * 60 * 1000);
       }
     } catch (error) {
-      console.error(error);
+      console.error('Error sending group message:', error);
     }
   });
 
@@ -615,6 +695,8 @@ io.on('connection', (socket) => {
     const roomId = [userId, targetUserId].sort().join('-');
     socket.join(roomId);
     
+    console.log(`User ${userId} joined private chat with ${targetUserId}, room: ${roomId}`);
+    
     // Load recent messages
     const messages = db.messages
       .filter(m => 
@@ -622,9 +704,8 @@ io.on('connection', (socket) => {
         ((m.userId === userId && m.targetUserId === targetUserId) ||
          (m.userId === targetUserId && m.targetUserId === userId))
       )
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 50)
-      .reverse();
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+      .slice(-50);
     
     socket.emit('load-private-messages', messages);
   });
@@ -636,10 +717,16 @@ io.on('connection', (socket) => {
       const user = db.users.find(u => u._id === userId);
       const targetUser = db.users.find(u => u._id === targetUserId);
       
-      if (!user || !targetUser) return;
+      if (!user || !targetUser) {
+        console.log('User not found in private message');
+        return;
+      }
+
+      console.log(`Private message from ${user.fullName} to ${targetUser.fullName}: ${message}`);
 
       // Check if blocked
       if (targetUser.blockedUsers && targetUser.blockedUsers.includes(userId)) {
+        console.log('User is blocked');
         return;
       }
 
@@ -651,23 +738,28 @@ io.on('connection', (socket) => {
         targetUserId: targetUser._id.toString(),
         message,
         type: 'private',
-        createdAt: new Date()
+        createdAt: new Date().toISOString()
       };
 
       db.messages.push(messageDoc);
+      saveDatabase();
 
       const roomId = [userId, targetUserId].sort().join('-');
+      console.log(`Broadcasting private message to room: ${roomId}`);
+      
+      // Emit to ALL clients in the private chat room (including sender)
       io.to(roomId).emit('new-private-message', messageDoc);
 
       // Auto-delete after expiry
       if (db.settings.privateMessageExpiry) {
         setTimeout(() => {
           db.messages = db.messages.filter(m => m._id !== messageDoc._id);
+          saveDatabase();
           io.to(roomId).emit('message-deleted', messageDoc._id);
         }, db.settings.privateMessageExpiry * 60 * 60 * 1000);
       }
     } catch (error) {
-      console.error(error);
+      console.error('Error sending private message:', error);
     }
   });
 
@@ -679,6 +771,8 @@ io.on('connection', (socket) => {
 // Start server
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
-  console.log('Database: In-Memory (no MongoDB required)');
+  console.log('Database: Persistent JSON file (database.json)');
   console.log('Super Admin: 618ursamajor618 / 618ursa618');
+  console.log(`Total users: ${db.users.length}`);
+  console.log(`Total messages: ${db.messages.length}`);
 });
