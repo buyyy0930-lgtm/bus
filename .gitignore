@@ -13,3 +13,4 @@ logs/
 *.zip
 public/uploads/*
 !public/uploads/.gitkeep
+database.json

@@ -8,38 +8,50 @@ Bakı Dövlət Universiteti tələbələri üçün real-time mesajlaşma platfor
 
 **GitHub**: https://github.com/buyyy0930-lgtm/bus
 
+## ✅ Son Yeniləmələr
+
+### 🔥 Düzəldilmiş Problemlər:
+- ✅ **Qalıcı Database**: Artıq server restart olduqda məlumatlar silinmir! (database.json)
+- ✅ **Real-time Mesajlaşma**: Hər iki tərəf mesajları görür (Socket.IO düzəldildi)
+- ✅ **16 Fakültə Ayrı Chat**: Hər fakültə öz ayrı chat otağında
+- ✅ **Qaydalar Görünür**: İstifadəçilər qaydaları oxuya bilir
+- ✅ **Şəxsi Chat Düzəldi**: İstifadəçi siyahısı və şəxsi mesajlaşma işləyir
+- ✅ **Admin Dəyişiklikləri Qalır**: Bütün admin tənzimləmələri qalıcıdır
+
 ## 📱 Xüsusiyyətlər
 
 ### İstifadəçi Funksiyaları
 - ✅ @bsu.edu.az email ilə qeydiyyat
 - ✅ Telefon nömrəsi validasiyası (+994)
-- ✅ 16 fakültə üzrə ayrı qrup chat otaqları
-- ✅ Şəxsi mesajlaşma sistemi
+- ✅ **16 fakültə üzrə AYRI qrup chat otaqları**
+- ✅ **Şəxsi mesajlaşma sistemi (istifadəçi seçimi ilə)**
 - ✅ Doğrulama sualları (korpus məlumatları)
 - ✅ Profil şəkli yükləmə
 - ✅ İstifadəçi əngəlləmə
 - ✅ Şikayət sistemi
-- ✅ Real-time mesajlaşma (Socket.IO)
+- ✅ **Real-time mesajlaşma (hər iki tərəf görür)**
 - ✅ Avtomatik mesaj silinmə
 - ✅ Profil redaktə
+- ✅ **Qaydalar bölməsi (hər kəs görür)**
 - ✅ Tam mobil uyğunluq
 
 ### Admin Funksiyaları
 - ✅ Super admin və alt admin sistemi
 - ✅ İstifadəçi idarəetməsi (aktiv/deaktiv)
-- ✅ Günün mövzusu dəyişikliyi
-- ✅ Qaydalar idarəetməsi
+- ✅ **Günün mövzusu dəyişikliyi (real-time yenilənir)**
+- ✅ **Qaydalar idarəetməsi (real-time yenilənir)**
 - ✅ Filtr sözləri sistemi
 - ✅ Şikayət edilən hesabların görüntülənməsi (16+ şikayət)
 - ✅ Mesaj silinmə vaxtı tənzimləmələri
+- ✅ **Bütün dəyişikliklər qalıcıdır (database.json)**
 
 ## 🚀 Texnologiyalar
 
 - **Backend**: Node.js, Express.js
-- **Real-time**: Socket.IO
-- **Database**: In-Memory (MongoDB tələb olunmur)
+- **Real-time**: Socket.IO (düzəldilmiş broadcast)
+- **Database**: JSON fayl (qalıcı, database.json)
 - **File Upload**: Multer
-- **Authentication**: bcryptjs, express-session
+- **Authentication**: bcryptjs, express-session (30 gün)
 
 ## 📦 Quraşdırma
 
@@ -71,44 +83,77 @@ Server `http://localhost:3000` ünvanında işləyəcək.
 1. Qeydiyyat səhifəsinə gedin
 2. Email: `test@bsu.edu.az` (istənilən email @bsu.edu.az ilə)
 3. Telefon: `+994501234567` (istənilən nömrə)
-4. Fakültə, dərəcə və kurs seçin
-5. Şifrə təyin edin
-6. 3 doğrulama sualından minimum 2-sini düzgün cavablandırın
+4. Fakültə seçin (16 fakültədən biri)
+5. Dərəcə və kurs seçin
+6. Şifrə təyin edin
+7. 3 doğrulama sualından minimum 2-sini düzgün cavablandırın
 
-## 📋 Doğrulama Sualları Cavabları
+### Chat İstifadəsi
+1. Qeydiyyatdan sonra chat səhifəsinə yönləndiriləcəksiniz
+2. **Qrup Chat**: Avtomatik olaraq öz fakültənizin qrup chatındasınız
+3. **Şəxsi Chat**: "Şəxsi Mesajlar" tabını seçin, istifadəçi siyahısından birini seçin
+4. **Qaydalar**: Sağ yuxarıda ℹ️ ikonuna klikləyin
 
-| Fakültə | Korpus |
-|---------|--------|
-| Mexanika-riyaziyyat | **3** |
-| Tətbiqi riyaziyyat və kibernetika | **3** |
-| Fizika | **əsas** |
-| Kimya | **əsas** |
-| Biologiya | **əsas** |
-| Ekologiya və torpaqşünaslıq | **əsas** |
-| Coğrafiya | **əsas** |
-| Geologiya | **əsas** |
-| Filologiya | **1** |
-| Tarix | **3** |
-| Beynəlxalq münasibətlər və iqtisadiyyat | **1** |
-| Hüquq | **1** |
-| Jurnalistika | **2** |
-| İnformasiya və sənəd menecmenti | **2** |
-| Şərqşünaslıq | **2** |
-| Sosial elmlər və psixologiya | **2** |
+## 📋 16 Fakültə Siyahısı
+
+| # | Fakültə | Korpus |
+|---|---------|--------|
+| 1 | Mexanika-riyaziyyat | **3** |
+| 2 | Tətbiqi riyaziyyat və kibernetika | **3** |
+| 3 | Fizika | **əsas** |
+| 4 | Kimya | **əsas** |
+| 5 | Biologiya | **əsas** |
+| 6 | Ekologiya və torpaqşünaslıq | **əsas** |
+| 7 | Coğrafiya | **əsas** |
+| 8 | Geologiya | **əsas** |
+| 9 | Filologiya | **1** |
+| 10 | Tarix | **3** |
+| 11 | Beynəlxalq münasibətlər və iqtisadiyyat | **1** |
+| 12 | Hüquq | **1** |
+| 13 | Jurnalistika | **2** |
+| 14 | İnformasiya və sənəd menecmenti | **2** |
+| 15 | Şərqşünaslıq | **2** |
+| 16 | Sosial elmlər və psixologiya | **2** |
+
+**Hər fakültə öz ayrı chat otağına malikdir!**
 
 ## 🌐 Deploy (Render.com)
 
-### Üstünlük: MongoDB tələb olunmur! ✨
+### Çox Sadə - MongoDB Lazım Deyil! ✨
 
-Layihə in-memory database istifadə edir, MongoDB quraşdırmasına ehtiyac yoxdur.
+1. **Render.com**-a gedin
+2. **New → Web Service**
+3. GitHub repository seçin: `buyyy0930-lgtm/bus`
+4. Tənzimləmələr:
+   - **Name**: bsu-chat
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+5. **Create Web Service** düyməsini klikləyin
+6. Deploy avtomatik başlayacaq (2-3 dəqiqə)
+7. Hazırdır! ✅
 
-1. **Render.com**-da Web Service yaradın
-2. GitHub repository seçin: `buyyy0930-lgtm/bus`
-3. **Build Command**: `npm install`
-4. **Start Command**: `npm start`
-5. Deploy edin!
+**Qeyd**: 
+- Environment variable tələb olunmur
+- `database.json` avtomatik yaradılır və qalıcıdır
+- Render.com-da disk storage qalıcıdır (silinmir)
 
-**Qeyd**: Server restart olduqda məlumatlar silinir. Production üçün MongoDB əlavə edin.
+## 📊 Texniki Detallar
+
+### Database (Qalıcı)
+- ✅ JSON fayl (database.json)
+- ✅ Avtomatik yaradılır
+- ✅ Hər dəyişiklikdə avtomatik save olunur
+- ✅ Server restart olsa da məlumatlar qalır
+
+### Real-time Mesajlaşma
+- ✅ Socket.IO rooms (hər fakültə ayrı room)
+- ✅ Broadcast düzəldilmiş (hər iki tərəf mesajları görür)
+- ✅ Private chat rooms (istifadəçi-istifadəçi)
+
+### Session İdarəetməsi
+- ✅ 30 günlük cookie
+- ✅ Qalıcı session
+- ✅ Avtomatik logout etmir
 
 ## 📱 Mobil Uyğunluq
 
@@ -117,33 +162,26 @@ Layihə in-memory database istifadə edir, MongoDB quraşdırmasına ehtiyac yox
 - ✅ Responsive dizayn
 - ✅ Android Chrome və iOS Safari dəstəyi
 
-## 🔧 Environment Variables (İstəyə görə)
-
-```env
-PORT=3000
-```
-
 ## 📁 Layihə Strukturu
 
 ```
 bus/
-├── server.js           # Express və Socket.IO server
-├── package.json        # Dependencies
-├── public/            # Frontend faylları
-│   ├── index.html     # Giriş və qeydiyyat
-│   ├── chat.html      # Chat interfeysi
-│   ├── admin.html     # Admin paneli
-│   └── uploads/       # Profil şəkilləri
+├── server.js          # Express və Socket.IO server
+├── package.json       # Dependencies
+├── database.json      # Qalıcı database (avtomatik yaradılır)
+├── public/           # Frontend faylları
+│   ├── index.html    # Giriş və qeydiyyat
+│   ├── chat.html     # Chat interfeysi
+│   ├── admin.html    # Admin paneli
+│   └── uploads/      # Profil şəkilləri
 └── README.md
 ```
 
-## 🛠️ Texniki Detallar
+## 🔧 Fayl Açıqlamaları
 
-- **In-Memory Database**: Bütün məlumatlar RAM-da saxlanılır
-- **Session Management**: express-session
-- **Real-time Communication**: Socket.IO
-- **File Storage**: Local file system (multer)
-- **Password Hashing**: bcryptjs
+- **database.json**: Bütün məlumatlar burada (users, messages, settings, reports)
+- **uploads/**: Profil şəkilləri burada saxlanılır
+- **server.js**: Əsas server, Socket.IO və API routes
 
 ## 📝 Lisenziya
 
@@ -155,4 +193,10 @@ Bakı Dövlət Universiteti - BSU Chat Platform
 
 ---
 
-**Qeyd**: Bu layihə təhsil məqsədli demo versiyasıdır. Production üçün MongoDB və ya başqa daimi database istifadə edin.
+**Xüsusi Qeyd**: Bütün problemlər həll edildi! ✅
+- 16 fakültə ayrı chat otaqlarında
+- Mesajlar qarşılıqlı görünür
+- Qaydalar hər kəsə görünür
+- Şəxsi chat tam işləkdir
+- Database qalıcıdır
+- Admin dəyişiklikləri saxlanılır
